@@ -1,5 +1,6 @@
 // Import core Three.js and OrbitControls
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/Addons.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 // THREE needs 3 core components: scene, camera, renderer
@@ -79,6 +80,7 @@ cube.castShadow = true;
 scene.add(cube);
 
 // Create floor
+
 const floorGeo = new THREE.PlaneGeometry(10, 10);
 // const floorMat = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: false });
 // basic material is kinda just color .
@@ -104,6 +106,8 @@ scene.background = new THREE.Color(0x0000ff); // light blue
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
+
+let geometryArray = ["BoxGeometry", "SphereGeometry", "PlaneGeometry", "CircleGeometry", "ConeGeometry", "CylinderGeometry", "RingGeometry", "TorusGeometry", "TorusKnotGeometry", "DodecahedronGeometry", "IcosahedronGeometry", "OctahedronGeometry", "TetrahedronGeometry", "CapsuleGeometry", "LatheGeometry", "TubeGeometry", "ShapeGeometry", "ExtrudeGeometry", "RoundedBoxGeometry"];
 // Event: Mouse click
 window.addEventListener('click', (event) => {
     // Convert mouse pos to -1 to 1 (WebGL coords)
@@ -117,16 +121,15 @@ window.addEventListener('click', (event) => {
     if (intersects.length > 0) {
         // Change color of first hit object
         const obj = intersects[0].object;
+        let newGeometryName = geometryArray[Math.floor(Math.random() * geometryArray.length)];
+
+        obj.geometry.dispose(); // Optional but good to avoid memory leaks
+        obj.geometry = new THREE[newGeometryName](); // Adjust parameters as needed
         console.log(obj);
-        if (obj.geometry.type === "BoxGeometry") {
-            obj.geometry.dispose(); // Optional but good to avoid memory leaks
-            obj.geometry = new THREE.SphereGeometry(1, 320, 32); // Adjust radius and segments
-        } else {
-            obj.geometry.dispose();
-            obj.geometry = new THREE.BoxGeometry();
-        }
-        obj.material.color.set(Math.random() * 0xffffff);
-        console.log(obj.geometry);
+
+        // obj.material.color.set(Math.random() * 0xffffff);
+        // is wireframe?
+        // obj.material.wireframe = true;
     }
 });
 
