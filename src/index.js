@@ -38,14 +38,22 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 
-// Add lights
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.4); // soft global light
-scene.add(ambientLight);
+// lights lights lights lights lights
+// ambientLight
+// const ambientLight = new THREE.AmbientLight(0xffffff, 0.4); // soft global light
+// scene.add(ambientLight);
 
-const pointLight = new THREE.PointLight(0xffffff, 10);
-pointLight.position.set(5, 5, 5);
-pointLight.castShadow = true;
-scene.add(pointLight);
+// pointLight
+// const pointLight = new THREE.PointLight(0xffffff, 10);
+// pointLight.position.set(5, 5, 5);
+// pointLight.castShadow = true;
+// scene.add(pointLight);
+
+// DirectionalLight
+const DirectionalLight = new THREE.DirectionalLight(0xffffff, 1);
+DirectionalLight.position.set(5, 5, 5);
+scene.add(DirectionalLight);
+
 
 // Load texture
 const textureLoader = new THREE.TextureLoader();
@@ -72,7 +80,10 @@ scene.add(cube);
 
 // Create floor
 const floorGeo = new THREE.PlaneGeometry(10, 10);
-const floorMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
+// const floorMat = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: false });
+// basic material is kinda just color .
+const floorMat = new THREE.MeshStandardMaterial({ color: 0x8888ff, wireframe: false });
+// standerd material is kinda reaialistic (light and shadows visable).
 const floor = new THREE.Mesh(floorGeo, floorMat);
 floor.rotation.x = -Math.PI / 2;
 floor.position.y = -1;
@@ -80,14 +91,53 @@ floor.receiveShadow = true;
 scene.add(floor);
 
 // Camera position
-camera.position.set(3, 2, 5);
-
-// Background color
-scene.background = new THREE.Color(0xaaddff); // light blue
-
-
 // Move the camera away from the cube so we can see it
 // camera.position.z = 2; // old
+// camera.position.set(3, 2, 5);
+camera.position.set(0, 1, 5);
+
+
+// Background color
+scene.background = new THREE.Color(0x0000ff); // light blue
+
+// Raycaster for mouse interaction
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+// Event: Mouse click
+window.addEventListener('click', (event) => {
+    // Convert mouse pos to -1 to 1 (WebGL coords)
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    // Find intersected objects
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(scene.children);
+
+    if (intersects.length > 0) {
+        // Change color of first hit object
+        const obj = intersects[0].object;
+        console.log(obj);
+        if (obj.geometry.type === "BoxGeometry") {
+            obj.geometry.dispose(); // Optional but good to avoid memory leaks
+            obj.geometry = new THREE.SphereGeometry(1, 320, 32); // Adjust radius and segments
+        } else {
+            obj.geometry.dispose();
+            obj.geometry = new THREE.BoxGeometry();
+        }
+        obj.material.color.set(Math.random() * 0xffffff);
+        console.log(obj.geometry);
+    }
+});
+
+// Event: Keyboard arrows to move cube
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') cube.position.x -= 0.2;
+    if (e.key === 'ArrowRight') cube.position.x += 0.2;
+    if (e.key === 'ArrowUp') cube.position.z -= 0.2;
+    if (e.key === 'ArrowDown') cube.position.z += 0.2;
+});
+
 // === ANIMATION LOOP ===
 // This function keeps running and updates the scene every frame
 function animate() {
