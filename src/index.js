@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/Addons.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
+import GUI from 'https://cdn.jsdelivr.net/npm/lil-gui@0.20/+esm';
+
 // THREE needs 3 core components: scene, camera, renderer
 
 // 1. Create a scene — this is where everything lives (objects, lights, etc.) 
@@ -53,34 +55,24 @@ controls.dampingFactor = 0.05;
 // DirectionalLight
 const DirectionalLight = new THREE.DirectionalLight(0xffffff, 1);
 DirectionalLight.position.set(5, 5, 5);
+DirectionalLight.castShadow = true; // Enable light to cast shadows
 scene.add(DirectionalLight);
 
+// // Lighting setup for the shadow thing
+// const light = new THREE.PointLight(0xffffff, 1, 100);
+// light.position.set(2, 2, 5);
+// light.castShadow = true; // Enable light to cast shadows
+// scene.add(light);
+// // Ambient light to light the scene (without casting shadows)
+// const ambientLight = new THREE.AmbientLight(0x404040); // Soft white light
+// scene.add(ambientLight);
 
-// Load texture
-const textureLoader = new THREE.TextureLoader();
-const texture = textureLoader.load('/src/textures/brick.jpg');
+
 
 // === OBJECTS ===
-// Create a green cube and add it to the scene
-
-// Define the cube's shape (1x1x1 box)
-const geometry = new THREE.BoxGeometry();
-// const geometry = new THREE.SphereGeometry();
-
-// Define how the cube looks (green color)
-// const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });  // old material
-// Create textured cube
-const material = new THREE.MeshStandardMaterial({ map: texture });
-// Combine shape and material into a mesh (actual object)
-const cube = new THREE.Mesh(geometry, material);
-cube.receiveShadow = true;
-cube.castShadow = true;
-
-// Add the cube to the scene
-scene.add(cube);
 
 // Create floor
-
+// 
 const floorGeo = new THREE.PlaneGeometry(10, 10);
 // const floorMat = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: false });
 // basic material is kinda just color .
@@ -88,9 +80,23 @@ const floorMat = new THREE.MeshStandardMaterial({ color: 0x8888ff, wireframe: fa
 // standerd material is kinda reaialistic (light and shadows visable).
 const floor = new THREE.Mesh(floorGeo, floorMat);
 floor.rotation.x = -Math.PI / 2;
-floor.position.y = -1;
-floor.receiveShadow = true;
+floor.position.y = -1
+// floor.receiveShadow = true;
 scene.add(floor);
+
+
+// Floor setup (for shadow receiving)
+// this is shadow-receiving plane (to see the shadow).
+// this is like floor but it has difreent material that is just shadow
+// we can use this and set the floor to receiveShadow = false;
+const planeGeometry = new THREE.PlaneGeometry(2000, 2000);
+const planeMaterial = new THREE.ShadowMaterial({ opacity: 0.5 });
+const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+plane.rotation.x = - Math.PI / 2;
+plane.position.y = -0.9;
+plane.receiveShadow = true;
+scene.add(plane);
+
 
 // Camera position
 // Move the camera away from the cube so we can see it
@@ -99,8 +105,67 @@ scene.add(floor);
 camera.position.set(0, 1, 5);
 
 
+// Backgrounds
 // Background color
 scene.background = new THREE.Color(0x0000ff); // light blue
+
+// Cube Map (6 images for the skybox)
+const skyboxLoader = new THREE.CubeTextureLoader();
+const WeltraumTexture = skyboxLoader.load([
+    'src/skybox/Weltraum/WeltraumR.png', // Right (px)
+    'src/skybox/Weltraum/WeltraumL.png', // Left (nx)
+    'src/skybox/Weltraum/WeltraumO.png', // Up (py)
+    'src/skybox/Weltraum/WeltraumU.png', // Down (ny)
+    'src/skybox/Weltraum/Weltraum.png',  // Front (pz)
+    'src/skybox/Weltraum/WeltraumH.png'  // Back (nz)
+]);
+const MilkyWayTexture = skyboxLoader.load([
+    'src/skybox/MilkyWay/dark-s_px.jpg', // Right (px)
+    'src/skybox/MilkyWay/dark-s_nx.jpg', // Left (nx)
+    'src/skybox/MilkyWay/dark-s_py.jpg', // Up (py)
+    'src/skybox/MilkyWay/dark-s_ny.jpg', // Down (ny)
+    'src/skybox/MilkyWay/dark-s_pz.jpg',  // Front (pz)
+    'src/skybox/MilkyWay/dark-s_nz.jpg'  // Back (nz)
+]);
+const parkTexture = skyboxLoader.load([
+    'src/skybox/park/posx.jpg', // Right (px)
+    'src/skybox/park/negx.jpg', // Left (nx)
+    'src/skybox/park/posy.jpg', // Up (py)
+    'src/skybox/park/negy.jpg', // Down (ny)
+    'src/skybox/park/posz.jpg',  // Front (pz)
+    'src/skybox/park/negz.jpg'  // Back (nz)
+]);
+
+// Set the background of the scene to the cube map
+scene.background = WeltraumTexture; // Apply the cube map as the background
+
+// Cube setup with PBR material
+// Define the cube's shape (1x1x1 box)
+const cubeGeometry = new THREE.BoxGeometry();
+// Load extra box texture
+const cubeTextureLoader = new THREE.TextureLoader();
+const brickTexture = cubeTextureLoader.load('/src/textures/brick.jpg');
+// materials
+// (BasicMaterial) with green color
+const cubeBasicmaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+// (StandardMaterial) textured cube 
+const cubeStandardMaterial = new THREE.MeshStandardMaterial({
+    // color: 0x0077ff, // Blue 
+    // color: 0x00ff00, // green 
+    // map: brickTexture, // add Texture
+    // reflections require metalness and roughness
+    metalness: 1,
+    roughness: 0.1,
+    envMap: WeltraumTexture, // Apply the Texture that will be shown in reflections .
+    wireframe: false,
+});
+// Combine shape and material into a mesh (actual object)
+const cube = new THREE.Mesh(cubeGeometry, cubeStandardMaterial);
+cube.castShadow = true; // Enable cube to cast shadows
+cube.receiveShadow = true; // Enable cube to receive shadows
+// Add the cube to the scene
+scene.add(cube);
+
 
 // Raycaster for mouse interaction
 const raycaster = new THREE.Raycaster();
@@ -141,15 +206,43 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowDown') cube.position.z += 0.2;
 });
 
+
+// Create lil-gui for controls
+const gui = new GUI();
+
+// Create control parameters
+const cubeProperties = {
+    rotationX: 0.01,
+    rotationY: 0.01,
+    rotationZ: 0.01,
+    scale: 1,
+    color: cube.material.color.getHex()
+};
+
+// Add controls to the GUI
+gui.add(cubeProperties, 'rotationX', 0, 0.5, 0.1).name('Rotation X');
+gui.add(cubeProperties, 'rotationY', 0, 0.5, 0.1).name('Rotation Y');
+gui.add(cubeProperties, 'rotationZ', 0, 1, 0.1).name('Rotation Z');
+gui.add(cubeProperties, 'scale', 0.1, 3).name('Scale').onChange((value) => {
+    cube.scale.set(value, value, value);
+});
+gui.addColor(cubeProperties, 'color').name('Color').onChange((value) => {
+    cube.material.color.set(value);
+});
+
+
+
 // === ANIMATION LOOP ===
 // This function keeps running and updates the scene every frame
 function animate() {
     requestAnimationFrame(animate); // call this function again on the next frame
 
     // Rotate the cube a bit every frame
-    cube.rotation.x += 0.01;
-    cube.rotation.y += 0.01;
-    cube.rotation.z += 0.01;
+    // cube.rotation.x += sceneProperties.rotationX; // use if useing sceneProperties
+    // cube.rotation.y += sceneProperties.rotationY; // use if useing sceneProperties
+    cube.rotation.x += cubeProperties.rotationX;
+    cube.rotation.y += cubeProperties.rotationY;
+    cube.rotation.z += cubeProperties.rotationZ;
     controls.update(); // update camera controls (needed if damping is enabled)
 
     // Render the current state of the scene from the camera's point of view
@@ -157,3 +250,40 @@ function animate() {
 
 }
 animate();
+
+window.addEventListener("resize", () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// extras
+
+// this changes the Properties for all scene childrens not just the cube
+// // lil-gui for controls
+// const gui = new GUI();
+// const sceneProperties = {
+//     rotationX: 0.01,
+//     rotationY: 0.01,
+//     scale: 1,
+//     color: 0xffffff,
+// };
+
+// // Add controls to the GUI
+// gui.add(sceneProperties, 'rotationX', 0, 0.1).name('Rotation X');
+// gui.add(sceneProperties, 'rotationY', 0, 0.1).name('Rotation Y');
+// gui.add(sceneProperties, 'scale', 0.1, 3).name('Scale').onChange((value) => {
+//     scene.children.forEach(child => {
+//         if (child instanceof THREE.Mesh) {
+//             child.scale.set(value, value, value);
+//         }
+//     });
+// });
+// gui.addColor(sceneProperties, 'color').name('Color').onChange((value) => {
+//     scene.children.forEach(child => {
+//         if (child instanceof THREE.Mesh) {
+//             child.material.color.set(value);
+//         }
+//     });
+// });
+// 
